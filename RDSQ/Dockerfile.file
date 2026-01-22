@@ -1,0 +1,56 @@
+# Dockerfile for RFSN v9.2 Production Deployment
+# Multi-stage build for minimal image size
+
+FROM python:3.11-slim as builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy requirements
+COPY setup.py setup.py
+COPY README.md README.md
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -e .
+
+# Final stage
+FROM python:3.11-slim
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y \
+    libgomp1 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Create app directory
+WORKDIR /app
+
+# Copy application code
+COPY src/ /app/src/
+COPY config.yaml /app/config.yaml
+
+# Create necessary directories
+RUN mkdir -p /app/models /app/logs /app/data
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV RFSN_ENV=production
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD python -c "from vw_bandit import VWContextualBandit; print('healthy')" || exit 1
+
+# Run application
+CMD ["python", "-m", "rfsn", "--env", "production"]
