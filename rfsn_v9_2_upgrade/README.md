@@ -16,6 +16,12 @@ This repository houses the integration of the **Franka Emika Panda** robotic arm
 - **⚡ Optimized Performance**: 400ms control loop + 200k step exploration budget for deep policy learning.
 - **🔧 Modular Architecture**: Drop-in `panda/` package compatible with existing RFSN infrastructure.
 
+## 📚 Documentation
+
+- [Implementation Plan](implementation_plan.md) - Architecture and design decisions.
+- [Walkthrough & Results](walkthrough.md) - Physics debugging journey and training outcomes.
+- [Task Log](task.md) - Development checklist and status.
+
 ## 🚀 Getting Started
 
 ### Prerequisites
