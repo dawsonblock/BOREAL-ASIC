@@ -1,0 +1,50 @@
+# BOREAL ASIC OpenRAM SRAM Configuration
+# Generates 1KB SRAM macro for SKY130 process
+
+# Process configuration
+process: "sky130"
+
+# SRAM specifications
+word_size: 32
+num_words: 256
+num_banks: 1
+
+# Technology parameters
+tech_name: "sky130"
+nominal_voltage: 1.8
+
+# Cell configuration
+cell: "sky130_sram_1rw1r_32x256_8"
+route_supplies: true
+check_lvsdrc: false
+
+# Output files
+output_name: "sram_1k"
+output_path: "macros"
+
+# Port configuration
+ports:
+  - name: "clk"
+    direction: "input"
+    type: "power"
+  - name: "addr"
+    direction: "input"
+    type: "signal"
+    width: 8
+  - name: "din"
+    direction: "input"
+    type: "signal"
+    width: 32
+  - name: "dout"
+    direction: "output"
+    type: "signal"
+    width: 32
+  - name: "web"
+    direction: "input"
+    type: "signal"
+  - name: "oeb"
+    direction: "input"
+    type: "signal"
+  - name: "csb"
+    direction: "input"
+    type: "signal"
