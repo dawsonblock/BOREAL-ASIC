@@ -14,6 +14,7 @@
 //   2 = LOAD_MB      6 = OR        A = CMP       E = EMIT (action request)
 //   3 = ADD          7 = XOR       B = JMP       F = HALT
 // ============================================================================
+`timescale 1ns / 1ps
 `include "boreal_pkg.v"
 
 module boreal_decision_vm #(

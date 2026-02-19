@@ -5,6 +5,7 @@
 // Reads operands from SRAM, executes MAC / scale / clamp, writes results
 // back to SRAM.  Supports matrix multiply (M x K) * (K x N).
 // ============================================================================
+`timescale 1ns / 1ps
 `include "boreal_pkg.v"
 
 module boreal_vector #(

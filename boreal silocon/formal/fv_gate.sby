@@ -1,0 +1,26 @@
+[tasks]
+prove
+cover
+
+[options]
+prove: mode prove
+prove: depth 30
+cover: mode cover
+cover: depth 30
+
+[engines]
+smtbmc z3
+
+[script]
+verilog_defaults -add -I .
+read -sv -formal boreal_pkg.v
+read -sv -formal boreal_gate.v
+read -sv -formal fv_gate_props.sv
+read -sv -formal fv_gate_top.sv
+prep -top fv_gate_top
+
+[files]
+rtl/boreal_pkg.v
+rtl/boreal_gate.v
+formal/props/fv_gate_props.sv
+formal/fv_gate_top.sv

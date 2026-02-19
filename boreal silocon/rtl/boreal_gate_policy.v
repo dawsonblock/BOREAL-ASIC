@@ -4,6 +4,7 @@
 // MMIO-configurable policy registers: target allowlists, rate limiter,
 // active policy hash, and debug override.
 // ============================================================================
+`timescale 1ns / 1ps
 `include "boreal_pkg.v"
 
 module boreal_gate_policy (

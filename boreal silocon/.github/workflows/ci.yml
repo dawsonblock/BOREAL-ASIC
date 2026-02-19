@@ -1,0 +1,48 @@
+# Boreal SoC CI Pipeline
+name: Boreal CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Verilator
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y verilator
+      - name: Lint RTL
+        run: make lint
+        working-directory: boreal silocon
+
+  simulate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [sim_gate, sim_boot, sim_dma, sim_vector, sim_interconnect]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Icarus Verilog
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y iverilog
+      - name: Run ${{ matrix.target }}
+        run: make ${{ matrix.target }}
+        working-directory: boreal silocon
+
+  synth-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Yosys
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y yosys
+      - name: Yosys Elaboration Check
+        run: make synth-yosys
+        working-directory: boreal silocon

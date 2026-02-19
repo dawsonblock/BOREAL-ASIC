@@ -5,6 +5,7 @@
 // from the Decision-VM, enforces policy (allowlist, rate-limit, bounds),
 // writes sanitised results to Privileged I/O, and commits a ledger entry.
 // ============================================================================
+`timescale 1ns / 1ps
 `include "boreal_pkg.v"
 
 module boreal_gate (

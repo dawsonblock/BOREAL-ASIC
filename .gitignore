@@ -1,0 +1,35 @@
+# =============================================================================
+# Boreal SoC Repository - .gitignore
+# =============================================================================
+
+# --- Ignore everything at the Desktop root except boreal silocon/ ---
+/*
+!/.gitignore
+!/boreal silocon/
+
+# --- Build artifacts ---
+boreal silocon/build/
+boreal silocon/*.vcd
+boreal silocon/tb_*.vcd
+
+# --- Formal verification working directories ---
+boreal silocon/formal/fv_*_prove/
+boreal silocon/formal/fv_gate/
+boreal silocon/formal/fv_dma/
+boreal silocon/formal/fv_interconnect/
+boreal silocon/formal/fv_ledger/
+
+# --- Synthesis outputs ---
+boreal silocon/build/syn/
+
+# --- OS files ---
+.DS_Store
+**/.DS_Store
+.localized
+
+# --- Editor / IDE ---
+*.swp
+*.swo
+*~
+.vscode/
+.idea/

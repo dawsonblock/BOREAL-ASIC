@@ -5,6 +5,7 @@
 // (public bus, gate bus) are arbitrated with fixed priority (gate wins).
 // Slave select is purely combinational based on address bits.
 // ============================================================================
+`timescale 1ns / 1ps
 `include "boreal_pkg.v"
 
 module boreal_interconnect (

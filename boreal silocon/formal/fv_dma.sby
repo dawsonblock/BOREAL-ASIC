@@ -1,0 +1,26 @@
+[tasks]
+prove
+cover
+
+[options]
+prove: mode prove
+prove: depth 30
+cover: mode cover
+cover: depth 30
+
+[engines]
+smtbmc z3
+
+[script]
+verilog_defaults -add -I .
+read -sv -formal boreal_pkg.v
+read -sv -formal boreal_dma_ring.v
+read -sv -formal fv_dma_props.sv
+read -sv -formal fv_dma_top.sv
+prep -top fv_dma_top
+
+[files]
+rtl/boreal_pkg.v
+rtl/boreal_dma_ring.v
+formal/props/fv_dma_props.sv
+formal/fv_dma_top.sv

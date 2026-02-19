@@ -1,0 +1,24 @@
+[tasks]
+prove
+cover
+
+[options]
+prove: mode prove
+prove: depth 20
+cover: mode cover
+cover: depth 20
+
+[engines]
+smtbmc z3
+
+[script]
+verilog_defaults -add -I .
+read -sv -formal boreal_ledger.v
+read -sv -formal fv_ledger_props.sv
+read -sv -formal fv_ledger_top.sv
+prep -top fv_ledger_top
+
+[files]
+rtl/boreal_ledger.v
+formal/props/fv_ledger_props.sv
+formal/fv_ledger_top.sv

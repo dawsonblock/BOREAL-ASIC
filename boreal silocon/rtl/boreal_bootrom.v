@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 // ============================================================================
 // Boreal SoC - Boot ROM
 // ============================================================================
@@ -43,8 +44,11 @@ module boreal_bootrom #(
     // ROM storage
     reg [31:0] rom [0:DEPTH-1];
 
-    // Load ROM contents from file if provided
+    // Zero-initialise ROM then optionally load from file
+    integer ri;
     initial begin
+        for (ri = 0; ri < DEPTH; ri = ri + 1)
+            rom[ri] = 32'h0;
         if (INIT_FILE != "")
             $readmemh(INIT_FILE, rom);
     end

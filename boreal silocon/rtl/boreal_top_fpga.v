@@ -4,6 +4,7 @@
 // Instantiates all modules and wires the interconnect, gate pipeline,
 // compute elements, decision pipeline, and secure boot subsystem.
 // ============================================================================
+`timescale 1ns / 1ps
 `include "boreal_pkg.v"
 
 module boreal_top_fpga (

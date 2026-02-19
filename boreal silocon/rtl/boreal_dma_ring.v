@@ -5,6 +5,7 @@
 // copy operations between SRAM addresses.  Descriptors are stored in
 // a 16-entry ring buffer.
 // ============================================================================
+`timescale 1ns / 1ps
 `include "boreal_pkg.v"
 
 module boreal_dma_ring #(
@@ -92,14 +93,9 @@ module boreal_dma_ring #(
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            head <= {RING_DEPTH_LOG{1'b0}};
             tail <= {RING_DEPTH_LOG{1'b0}};
-        end else if (sel && wr) begin
-            case (reg_off)
-                OFF_HEAD: head <= wdata[RING_DEPTH_LOG-1:0];
-                OFF_TAIL: tail <= wdata[RING_DEPTH_LOG-1:0];
-                default: ;
-            endcase
+        end else if (sel && wr && reg_off == OFF_TAIL) begin
+            tail <= wdata[RING_DEPTH_LOG-1:0];
         end
     end
 
@@ -125,6 +121,7 @@ module boreal_dma_ring #(
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             dma_state  <= DS_IDLE;
+            head       <= {RING_DEPTH_LOG{1'b0}};
             busy       <= 1'b0;
             done       <= 1'b0;
             error      <= 1'b0;
@@ -142,6 +139,8 @@ module boreal_dma_ring #(
             case (dma_state)
                 DS_IDLE: begin
                     mem_sel <= 1'b0;
+                    if (sel && wr && reg_off == OFF_HEAD)
+                        head <= wdata[RING_DEPTH_LOG-1:0];
                     if (start_pulse && head != tail) begin
                         busy      <= 1'b1;
                         done      <= 1'b0;
