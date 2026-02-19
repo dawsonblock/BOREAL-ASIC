@@ -10,7 +10,7 @@
 
 **A complete hardware-enforced security System-on-Chip (SoC) designed for ASIC fabrication**
 
-[📖 Documentation](#documentation) • [🚀 Quick Start](#quick-start) • [🔧 Architecture](#architecture) • [🤝 Contributing](#contributing)
+[📖 Documentation](#documentation) • [🚀 Quick Start](#quick-start) • [🏗️ Architecture](#architecture) • [🤝 Contributing](#contributing)
 
 </div>
 
@@ -64,6 +64,7 @@
 ### Core Components
 
 #### 🖥️ RISC-V CPU Core (RV32I)
+
 - **Architecture**: 5-stage pipeline (Fetch, Decode, Execute, Memory, Writeback)
 - **ISA**: RV32I base integer instruction set
 - **Registers**: 32×32-bit general-purpose registers
@@ -71,6 +72,7 @@
 - **Performance**: Single-cycle execution for most instructions
 
 #### 🔐 Security Gate
+
 - **Policy Engine**: Hardware-enforced access control policies
 - **Authentication**: Multi-factor authentication support
 - **Authorization**: Role-based access control (RBAC)
@@ -78,6 +80,7 @@
 - **Threat Detection**: Hardware-based anomaly detection
 
 #### 📊 Audit Ledger
+
 - **Capacity**: 1024 tamper-evident log entries
 - **Integrity**: Cryptographic hashing for log integrity
 - **Timestamp**: Hardware timestamp generation
@@ -85,6 +88,7 @@
 - **Export**: Secure log export capabilities
 
 #### 🧠 Vector Processor
+
 - **SIMD Width**: 8-lane vector processing
 - **Data Types**: INT8, INT16, INT32 support
 - **Operations**: Add, multiply, compare, shift
@@ -92,6 +96,7 @@
 - **Performance**: 320 INT8 operations per clock cycle
 
 #### 💾 Memory Subsystem
+
 - **SRAM**: 4KB high-speed synchronous SRAM
 - **Boot ROM**: 4KB one-time programmable ROM
 - **DMA**: Dedicated DMA controller with CRC-32
@@ -101,33 +106,36 @@
 ## 📊 Detailed Specifications
 
 ### Process Technology
-| Parameter | Value | Notes |
-|-----------|-------|--------|
-| **Foundry** | SkyWater Technology | Open-source PDK |
-| **Process Node** | 130nm CMOS | SKY130 PDK |
-| **Metal Layers** | 5 | Copper interconnect |
-| **Gate Length** | 130nm | Nominal |
-| **Supply Voltage** | 1.8V core, 3.3V I/O | Dual voltage domains |
-| **Temperature Range** | -40°C to 125°C | Industrial grade |
+
+| Parameter      | Value                          | Notes                        |
+|----------------|--------------------------------|------------------------------|
+| **Foundry**    | SkyWater Technology           | Open-source PDK              |
+| **Process Node** | 130nm CMOS                  | SKY130 PDK                   |
+| **Metal Layers** | 5                            | Copper interconnect          |
+| **Gate Length** | 130nm                        | Nominal                      |
+| **Supply Voltage** | 1.8V core, 3.3V I/O       | Dual voltage domains         |
+| **Temperature Range** | -40°C to 125°C          | Industrial grade             |
 
 ### Performance Metrics
-| Parameter | Value | Units | Notes |
-|-----------|-------|--------|--------|
-| **Clock Frequency** | 40 | MHz | Target frequency |
-| **Power Consumption** | <100 | mW | Typical operation |
-| **Area** | 500×500 | μm² | Die size |
-| **Transistor Count** | ~500K | transistors | Estimated |
-| **Performance** | 80 | DMIPS | Dhrystone benchmark |
-| **Memory Bandwidth** | 160 | MB/s | Peak |
+
+| Parameter          | Value    | Units | Notes                    |
+|--------------------|----------|-------|--------------------------|
+| **Clock Frequency** | 40      | MHz  | Target frequency         |
+| **Power Consumption** | <100   | mW   | Typical operation        |
+| **Area**           | 500×500 | μm²  | Die size                 |
+| **Transistor Count** | ~500K  | transistors | Estimated          |
+| **Performance**    | 80      | DMIPS | Dhrystone benchmark      |
+| **Memory Bandwidth** | 160    | MB/s | Peak                     |
 
 ### Package & Pinout
-| Parameter | Value | Details |
-|-----------|-------|----------|
-| **Package Type** | QFN-40 | Quad Flat No-lead |
-| **Pin Count** | 40 | Signal pins |
-| **Pitch** | 0.5mm | Pin spacing |
-| **Body Size** | 6×6mm | Package dimensions |
-| **Thermal** | Exposed pad | Ground connection |
+
+| Parameter        | Value          | Details                        |
+|------------------|----------------|--------------------------------|
+| **Package Type** | QFN-40        | Quad Flat No-lead             |
+| **Pin Count**    | 40            | Signal pins                   |
+| **Pitch**        | 0.5mm         | Pin spacing                   |
+| **Body Size**    | 6×6mm         | Package dimensions            |
+| **Thermal**      | Exposed pad   | Ground connection             |
 
 ### Pin Assignment (QFN-40)
 
@@ -158,17 +166,17 @@
 
 ### Memory Map
 
-| Address Range | Size | Description | Access |
-|---------------|------|-------------|---------|
-| `0x0000_0000 - 0x0000_0FFF` | 4KB | Boot ROM | Read-only |
-| `0x0000_1000 - 0x0000_1FFF` | 4KB | SRAM | Read-write |
-| `0x1000_0000 - 0x1000_FFFF` | 64KB | DMA Controller | Read-write |
-| `0x1001_0000 - 0x1001_FFFF` | 64KB | Vector Processor | Read-write |
-| `0x1002_0000 - 0x1002_FFFF` | 64KB | Mailbox | Read-write |
-| `0x1003_0000 - 0x1003_FFFF` | 64KB | Decision VM | Read-write |
-| `0x1004_0000 - 0x1004_FFFF` | 64KB | Security Gate | Read-write |
-| `0x1005_0000 - 0x1005_FFFF` | 64KB | Audit Ledger | Read-write |
-| `0x2000_0000 - 0x2FFF_FFFF` | 256MB | Privileged I/O | Read-write |
+| Address Range          | Size   | Description         | Access     |
+|------------------------|--------|---------------------|------------|
+| `0x0000_0000 - 0x0000_0FFF` | 4KB   | Boot ROM           | Read-only  |
+| `0x0000_1000 - 0x0000_1FFF` | 4KB   | SRAM               | Read-write |
+| `0x1000_0000 - 0x1000_FFFF` | 64KB  | DMA Controller     | Read-write |
+| `0x1001_0000 - 0x1001_FFFF` | 64KB  | Vector Processor   | Read-write |
+| `0x1002_0000 - 0x1002_FFFF` | 64KB  | Mailbox            | Read-write |
+| `0x1003_0000 - 0x1003_FFFF` | 64KB  | Decision VM        | Read-write |
+| `0x1004_0000 - 0x1004_FFFF` | 64KB  | Security Gate      | Read-write |
+| `0x1005_0000 - 0x1005_FFFF` | 64KB  | Audit Ledger       | Read-write |
+| `0x2000_0000 - 0x2FFF_FFFF` | 256MB | Privileged I/O     | Read-write |
 
 ## 📁 Project Structure
 
@@ -186,7 +194,7 @@ BOREAL-ASIC/
 │   ├── boreal_priv_io.v         # Privileged I/O interfaces
 │   ├── boreal_sram_tile_bram.v  # SRAM wrapper with ECC
 │   ├── boreal_sha256_stub.v     # SHA-256 cryptographic accelerator
-│   ├── boreal_sigverify_stub.v  # Signature verification hardware
+│   ├── boreal_sigverify_stub.v  # Signature verification stub
 │   ├── boreal_top_fpga.v        # FPGA top-level for prototyping
 │   ├── boreal_vec_lane.v        # Vector processing lane (SIMD)
 │   └── boreal_vector.v          # Vector processing unit (8-lane)
@@ -233,6 +241,8 @@ cd BOREAL-ASIC
 ```
 
 ### FPGA Prototyping
+
+For FPGA prototyping before ASIC fabrication:
 
 ```bash
 # For pre-ASIC validation on FPGA
@@ -281,6 +291,7 @@ export PATH="$PWD:$PATH"
 ### Security Architecture
 
 #### Hardware Security Gate
+
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Policy DB     │    │   Auth Engine   │    │   Audit Log     │
@@ -300,6 +311,7 @@ export PATH="$PWD:$PATH"
 - **Threat Detection**: Anomaly detection with hardware counters
 
 #### Cryptographic Acceleration
+
 - **SHA-256**: Hardware accelerated hashing (100MHz operation)
 - **Signature Verify**: ECDSA signature validation hardware
 - **Key Management**: Hardware security module (HSM) integration
@@ -308,6 +320,7 @@ export PATH="$PWD:$PATH"
 ### Performance Characteristics
 
 #### CPU Performance
+
 - **Pipeline**: 5-stage with branch prediction
 - **IPC**: 0.8 instructions per clock (typical)
 - **Branch Penalty**: 2 cycles (mispredict)
@@ -315,6 +328,7 @@ export PATH="$PWD:$PATH"
 - **Context Switch**: 45 cycles (minimum)
 
 #### Memory Subsystem
+
 - **SRAM Latency**: 1 cycle read/write
 - **Boot ROM**: 2 cycle read-only access
 - **DMA Bandwidth**: 160 MB/s peak
@@ -322,6 +336,7 @@ export PATH="$PWD:$PATH"
 - **ECC**: Single-error correction, double-error detection
 
 #### Vector Processing
+
 - **Peak Performance**: 320 INT8 operations/cycle
 - **Memory Bandwidth**: 640 MB/s (vector loads/stores)
 - **Latency**: 3 cycles (load-to-use)
@@ -330,6 +345,7 @@ export PATH="$PWD:$PATH"
 ### Verification Methodology
 
 #### RTL Simulation
+
 ```verilog
 // Example testbench structure
 module tb_boreal_asic;
@@ -341,45 +357,18 @@ endmodule
 ```
 
 #### Formal Verification
+
 - **Security Properties**: Access control verification
 - **Protocol Compliance**: AXI4-lite bus verification
 - **Deadlock Freedom**: System-level formal analysis
 - **Coverage**: >95% functional coverage target
 
 #### Static Timing Analysis
+
 - **Setup Time**: 0 violations at 40MHz
 - **Hold Time**: 0 violations at 40MHz
 - **Clock Skew**: <200ps across die
 - **Operating Conditions**: Worst-case process, voltage, temperature
-
-## 📖 Documentation
-
-### Architecture Details
-- **[RISC-V CPU](./docs/cpu.md)**: Pipeline architecture and ISA implementation
-- **[Security Gate](./docs/security.md)**: Hardware access control mechanisms
-- **[Audit Ledger](./docs/ledger.md)**: Tamper-evident logging system
-- **[Vector Processor](./docs/vector.md)**: SIMD acceleration architecture
-- **[Memory Subsystem](./docs/memory.md)**: SRAM, ROM, and DMA controller
-- **[Interrupt System](./docs/interrupts.md)**: PLIC and exception handling
-
-### ASIC Implementation
-- **[OpenLane Flow](./docs/openlane.md)**: Complete ASIC synthesis and P&R
-- **[Timing Closure](./docs/timing.md)**: 40MHz timing analysis and optimization
-- **[Power Analysis](./docs/power.md)**: Low-power design techniques
-- **[Physical Design](./docs/physical.md)**: Floorplanning and routing
-- **[DRC/LVS](./docs/verification.md)**: Design rule and layout verification
-
-### Security Features
-- **[Hardware Security](./docs/hw_security.md)**: Security gate implementation
-- **[Cryptography](./docs/crypto.md)**: Hardware acceleration details
-- **[Secure Boot](./docs/secure_boot.md)**: Immutable boot process
-- **[Threat Model](./docs/threat_model.md)**: Security threat analysis
-
-### Software Development
-- **[SDK](./docs/sdk.md)**: Software development kit
-- **[API Reference](./docs/api.md)**: Hardware abstraction layer
-- **[Bootloader](./docs/bootloader.md)**: Boot process and firmware
-- **[RTOS](./docs/rtos.md)**: Real-time operating system support
 
 ## 🔧 API Reference
 
@@ -434,17 +423,20 @@ int boreal_dma_wait(void);
 ## 🧪 Testing & Validation
 
 ### Hardware Testing
+
 - **FPGA Prototyping**: Pre-ASIC validation on Xilinx Artix-7
 - **Post-Silicon**: Hardware bring-up and validation
 - **Production Testing**: Automated test program generation
 
 ### Software Testing
+
 - **Unit Tests**: Individual module verification
 - **Integration Tests**: System-level functionality
 - **Performance Tests**: Benchmarking and profiling
 - **Security Tests**: Penetration testing and fuzzing
 
 ### Quality Metrics
+
 - **Test Coverage**: >95% functional coverage
 - **Code Quality**: Lint-free RTL with consistent style
 - **Documentation**: 100% API documentation coverage
@@ -455,6 +447,7 @@ int boreal_dma_wait(void);
 We welcome contributions to the BOREAL ASIC project!
 
 ### Development Process
+
 1. **Fork** the repository
 2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
 3. **Develop** your changes with comprehensive tests
@@ -463,6 +456,7 @@ We welcome contributions to the BOREAL ASIC project!
 6. **Open** a Pull Request with detailed description
 
 ### Contribution Guidelines
+
 - **Code Style**: Follow SystemVerilog best practices
 - **Documentation**: Update docs for all API changes
 - **Testing**: Add tests for new functionality
@@ -470,6 +464,7 @@ We welcome contributions to the BOREAL ASIC project!
 - **Performance**: Consider area, power, and timing impact
 
 ### Areas for Contribution
+
 - **RTL Optimization**: Performance and area improvements
 - **Security Enhancements**: Additional security features
 - **Verification**: Test cases and formal properties
@@ -478,6 +473,7 @@ We welcome contributions to the BOREAL ASIC project!
 - **FPGA Support**: Enhanced FPGA prototyping capabilities
 
 ### Testing Requirements
+
 ```bash
 # Run RTL simulation
 make test
@@ -517,7 +513,7 @@ limitations under the License.
 - **SkyWater Technology**: Open-source PDK enabling ASIC innovation
 - **OpenROAD Project**: OpenLane ASIC implementation framework
 - **RISC-V Foundation**: Open ISA enabling hardware freedom
-- **Open Source Community**: Libraries, tools, and collaboration
+- **Open Source Community**: Libraries, libraries, and collaboration
 
 ## 📞 Contact & Support
 
@@ -527,6 +523,7 @@ limitations under the License.
 - **LinkedIn**: [Your LinkedIn Profile]
 
 ### Project Resources
+
 - **Repository**: https://github.com/dawsonblock/BOREAL-ASIC
 - **Documentation**: https://github.com/dawsonblock/BOREAL-ASIC/tree/main/docs
 - **Issues**: https://github.com/dawsonblock/BOREAL-ASIC/issues
@@ -534,6 +531,7 @@ limitations under the License.
 - **Releases**: https://github.com/dawsonblock/BOREAL-ASIC/releases
 
 ### Community
+
 - **Discord**: [BOREAL ASIC Community]
 - **Forum**: [Technical Discussion Forum]
 - **Newsletter**: [Project Updates]
@@ -544,12 +542,10 @@ limitations under the License.
 
 **BOREAL ASIC** - Hardware Security for the Digital Age
 
-*Building the future of secure computing, one transistor at a time*
+*Made with ❤️ for secure computing*
 
 ![GitHub stars](https://img.shields.io/github/stars/dawsonblock/BOREAL-ASIC?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/dawsonblock/BOREAL-ASIC?style=social)
 ![GitHub watchers](https://img.shields.io/github/watchers/dawsonblock/BOREAL-ASIC?style=social)
-
-**Hardware-Enforced Security • RISC-V Compatible • ASIC Ready**
 
 </div>
