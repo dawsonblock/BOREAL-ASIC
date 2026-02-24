@@ -1,0 +1,43 @@
+/*
+ * Boreal Neuro-Core v2.5 - PREDICTIVE EDITION
+ * Implements Temporal Predictive Coding to cancel out sensor lag.
+ * States: 
+ * mu_pos: Inferred Current Position
+ * mu_vel: Inferred Velocity (The "Lead" term)
+ */
+
+module boreal_predictive_core (
+    input  wire        clk,
+    input  wire        rst_n,
+    input  wire signed [15:0] target_in, // From high-speed I/O
+    input  wire [7:0]  lead_factor,      // How far to "look ahead" (0-255)
+    
+    output wire signed [15:0] predicted_pos
+);
+
+    reg signed [15:0] mu_pos;
+    reg signed [15:0] mu_vel;
+    reg signed [15:0] prev_mu_pos;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            mu_pos <= 0;
+            mu_vel <= 0;
+            prev_mu_pos <= 0;
+        end else begin
+            // 1. Active Inference update for Position
+            // mu_pos = mu_pos + eta * (target - mu_pos)
+            mu_pos <= mu_pos + ((target_in - mu_pos) >>> 4);
+            
+            // 2. Calculate Velocity (The Trend)
+            mu_vel <= mu_pos - prev_mu_pos;
+            prev_mu_pos <= mu_pos;
+        end
+    end
+
+    // 3. THE TIME MACHINE: Output is Position + (Velocity * Lead)
+    // This projects the cursor forward in time to cancel Bluetooth lag.
+    assign predicted_pos = mu_pos + ((mu_vel * $signed({1'b0, lead_factor})) >>> 4);
+
+endmodule
+

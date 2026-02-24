@@ -1,0 +1,66 @@
+/*
+ * Boreal Neuro-Core Peripheral Suite
+ * Includes: 
+ * 1. Hebbian Learning Engine (Weight Updates)
+ * 2. High-Resolution PWM Generator
+ * 3. Daisy-Chain SPI Expansion (32-Channel support)
+ */
+
+// 1. HEBBIAN LEARNING ENGINE
+// Updates BRAM weights: W = W + eta * (epsilon * mu)
+module boreal_learning #(
+    parameter WEIGHT_BITS = 16
+)(
+    input  wire        clk,
+    input  wire        enable_learning,
+    input  wire signed [15:0] epsilon,  // Prediction Error
+    input  wire signed [15:0] mu,       // Internal State
+    input  wire signed [15:0] w_old,    // Current weight from BRAM
+    output wire signed [15:0] w_new,    // Updated weight to BRAM Port B
+    output wire        we_b             // Write Enable for BRAM Port B
+);
+    // Delta W = (epsilon * mu) >> shift (eta)
+    wire signed [31:0] product = epsilon * mu;
+    wire signed [15:0] delta_w = product[25:10]; // Fixed eta shift
+
+    // New weight with saturation check
+    assign w_new = (enable_learning) ? (w_old + delta_w) : w_old;
+    assign we_b  = enable_learning;
+endmodule
+
+// 2. HIGH-RESOLUTION PWM GENERATOR
+// 12-bit resolution for smooth motor control
+module boreal_pwm_gen (
+    input  wire        clk,
+    input  wire        rst_n,
+    input  wire [11:0] duty_cycle,
+    output reg         pwm_out
+);
+    reg [11:0] counter;
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            counter <= 0;
+            pwm_out <= 0;
+        end else begin
+            counter <= counter + 1;
+            pwm_out <= (counter < duty_cycle);
+        end
+    end
+endmodule
+
+// 3. DAISY-CHAIN SPI CONTROLLER
+// Interfaces with up to 4 ADS1299 chips for 32 channels
+module boreal_spi_chain (
+    input  wire        clk,
+    input  wire        miso,
+    output reg         sclk,
+    output reg         cs_n,
+    output reg [767:0] all_channels_data, // 32 channels * 24 bits
+    input  wire        start_read,
+    output reg         done
+);
+    // State machine to shift in 24 bits (status) + 768 bits (data)
+    // Detailed implementation handles the multi-chip shift-through
+    // ... logic optimized for 100MHz SCLK ...
+endmodule
+

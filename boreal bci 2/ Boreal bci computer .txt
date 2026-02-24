@@ -1,0 +1,63 @@
+/*
+ * BOREAL NEURO-CORE v2.4 (EPOC X EDITION)
+ * Logic to parse 14-channel serial data and run 2D Active Inference.
+ */
+
+module boreal_epoc_core (
+    input  wire        clk,
+    input  wire        rst_n,
+    input  wire        uart_rx,
+    
+    output reg signed [15:0] cursor_x,
+    output reg signed [15:0] cursor_y
+);
+
+    // --- 1. UART RECEIVER & PARSER ---
+    wire [7:0] rx_byte;
+    wire       rx_valid;
+    reg [4:0]  byte_idx;
+    reg [7:0]  packet_buffer [0:29];
+    reg [15:0] ch_data [0:13];
+    reg        inference_trigger;
+
+    // Simple UART RX Module (Standard Implementation)
+    uart_rx_logic rx_inst (.clk(clk), .rx(uart_rx), .data(rx_byte), .valid(rx_valid));
+
+    always @(posedge clk) begin
+        if (rx_valid) begin
+            if (rx_byte == 8'hAA) byte_idx <= 0;
+            else if (byte_idx < 30) begin
+                packet_buffer[byte_idx] <= rx_byte;
+                byte_idx <= byte_idx + 1;
+                
+                if (byte_idx == 29 && rx_byte == 8'h55) begin
+                    // Packet Complete. Latch 14 channels.
+                    for (integer i=0; i<14; i=i+1) begin
+                        ch_data[i] <= {packet_buffer[1 + i*2], packet_buffer[2 + i*2]};
+                    end
+                    inference_trigger <= 1;
+                end
+            end
+        end else begin
+            inference_trigger <= 0;
+        end
+    end
+
+    // --- 2. 14-TO-2 MANIFOLD MAPPING (Active Inference) ---
+    // mu_x and mu_y are updated based on the 14-channel input weighted sum
+    always @(posedge clk) begin
+        if (inference_trigger) begin
+            // Simplified Mapping: Left sensors influence X, Right sensors influence Y
+            // In a full build, this uses the BRAM weight matrix W[14][2]
+            reg signed [31:0] sum_x, sum_y;
+            sum_x = ch_data[0] + ch_data[1] + ch_data[2] - ch_data[11] - ch_data[12];
+            sum_y = ch_data[5] + ch_data[6] + ch_data[7] - ch_data[1] - ch_data[2];
+
+            // Update mu (Active Inference state update)
+            cursor_x <= cursor_x + (sum_x[20:5] - (cursor_x >>> 4));
+            cursor_y <= cursor_y + (sum_y[20:5] - (cursor_y >>> 4));
+        end
+    end
+
+endmodule
+

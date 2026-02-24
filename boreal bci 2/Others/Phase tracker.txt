@@ -1,0 +1,54 @@
+/*
+ * Adaptive Phase Tracker for Sleep and Tremor Modes
+ * Instead of a fixed delay, it uses zero-crossing detection 
+ * to estimate frequency (f) and trigger at specific phase offsets.
+ */
+
+module boreal_pll_tracker (
+    input  wire        clk,          // High speed system clock
+    input  wire        rst_n,
+    input  wire signed [15:0] signal_in, // Filtered EEG
+    input  wire        data_ready,
+    
+    output reg         trigger_peak,   // Pulses at phase 0 (Sleep Up-State)
+    output reg         trigger_anti    // Pulses at phase 180 (Tremor Cancellation)
+);
+
+    reg signed [15:0] prev_sample;
+    reg [31:0] period_counter;
+    reg [31:0] estimated_period;
+    reg [31:0] phase_counter;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            period_counter <= 0;
+            estimated_period <= 1000000; // Default fallback
+            phase_counter <= 0;
+            prev_sample <= 0;
+        end else if (data_ready) begin
+            period_counter <= period_counter + 1;
+            phase_counter <= phase_counter + 1;
+
+            // Zero-Crossing Detection (Positive slope)
+            if (prev_sample <= 0 && signal_in > 0) begin
+                estimated_period <= period_counter;
+                period_counter <= 0;
+                phase_counter <= 0; // Reset phase on lock
+            end
+            
+            prev_sample <= signal_in;
+
+            // Trigger Generation
+            // Peak at 0 deg (reset point)
+            trigger_peak <= (phase_counter == 0);
+            
+            // Anti-phase at 180 deg (half period)
+            trigger_anti <= (phase_counter == (estimated_period >> 1));
+        end else begin
+            trigger_peak <= 0;
+            trigger_anti <= 0;
+        end
+    end
+
+endmodule
+

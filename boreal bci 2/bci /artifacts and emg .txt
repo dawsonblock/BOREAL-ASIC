@@ -1,0 +1,21 @@
+import numpy as np
+
+def analyze_signal_quality(window):
+    """Returns (is_broken, quality_score). Freezes if sensors fall off."""
+    max_amp = np.max(np.abs(window))
+    std_dev = np.std(window)
+    
+    if max_amp > 800.0 or std_dev < 0.1:
+        return True, 0.0 # Broken/Disconnected
+    
+    # Simple SNR approximation
+    quality = 1.0 - min(max_amp / 800.0, 1.0)
+    return False, quality
+
+def detect_jaw_clench(window, channels, threshold):
+    """Looks for broadband high-frequency variance on Temporal nodes."""
+    target_data = window[:, channels]
+    variance = np.var(target_data)
+    is_clench = variance > threshold
+    return is_clench, variance
+

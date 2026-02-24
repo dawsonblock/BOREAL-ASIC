@@ -1,0 +1,38 @@
+import numpy as np
+import control
+
+def compute_steady_kalman(q_scale=0.01, r_scale=0.5, dt=1.0):
+    """Computes fixed-point 5-state Kalman gain matrix for RTL generation."""
+    # State: [ux, uy, vx, vy, drift]
+    A = np.array([
+        [1, 0, dt, 0, dt],
+        [0, 1, 0, dt, dt],
+        [0, 0, 1, 0, 0],
+        [0, 0, 0, 1, 0],
+        [0, 0, 0, 0, 1] 
+    ], dtype=float)
+    
+    G = np.eye(5)
+    C = np.array([[1,0,0,0,0], [0,1,0,0,0]], dtype=float)
+    
+    Q = np.eye(5) * q_scale
+    R = np.eye(2) * r_scale
+
+    # Compute discrete-time steady-state gain
+    K, P, E = control.dlqe(A, G, C, Q, R)
+    
+    print(f"Filter Eigenvalues: {np.abs(E)}")
+    if any(np.abs(E) >= 1.0):
+        print("WARNING: Filter is unstable!")
+
+    # Convert to Q3.13 format for Verilog
+    K_fp = np.round(K * 8192).astype(int)
+    
+    print("\n--- Verilog Constants (Q3.13) ---")
+    for i in range(5):
+        print(f"localparam signed [15:0] K{i}0 = 16'sd{K_fp[i,0]}, K{i}1 = 16'sd{K_fp[i,1]};")
+
+if __name__ == "__main__":
+    print("Generating standard tuning table (q=0.005, r=0.2)")
+    compute_steady_kalman(q_scale=0.005, r_scale=0.2)
+

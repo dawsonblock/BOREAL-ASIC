@@ -1,0 +1,72 @@
+import asyncio
+import json
+import ssl
+import os
+import websockets
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class Cortex:
+    """Robust WebSocket Client for Emotiv Cortex 2.x"""
+    def __init__(self):
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        self.ssl = ctx
+        self.ws = None
+        self.id = 1
+        self.url = os.getenv("CORTEX_URL", "wss://localhost:6868")
+        self.client_id = os.getenv("CORTEX_CLIENT_ID", "")
+        self.client_secret = os.getenv("CORTEX_CLIENT_SECRET", "")
+
+    async def connect(self):
+        print("Connecting to Emotiv Cortex...")
+        self.ws = await websockets.connect(self.url, ssl=self.ssl, max_size=2**20)
+        print("Connected to wss://localhost:6868")
+
+    async def rpc(self, method, params):
+        msg = {"id": self.id, "jsonrpc": "2.0", "method": method, "params": params}
+        self.id += 1
+        await self.ws.send(json.dumps(msg))
+        resp = json.loads(await self.ws.recv())
+        if "error" in resp:
+            raise RuntimeError(f"Cortex API Error ({method}): {resp['error']}")
+        return resp["result"]
+
+    async def handshake(self):
+        print("Requesting Access (Approve in Emotiv Launcher if prompted)...")
+        await self.rpc("requestAccess", {"clientId": self.client_id, "clientSecret": self.client_secret})
+        
+        auth = await self.rpc("authorize", {"clientId": self.client_id, "clientSecret": self.client_secret})
+        token = auth["cortexToken"]
+
+        headsets = await self.rpc("queryHeadsets", {})
+        if not headsets:
+            raise RuntimeError("No headsets found! Power on EPOC X.")
+        hid = headsets[0]["id"]
+        
+        print(f"Connecting to {hid}...")
+        await self.rpc("controlDevice", {"command": "connect", "headset": hid})
+        await asyncio.sleep(1.5) # Allow Bluetooth/Dongle to stabilize
+
+        print("Creating Active Session...")
+        sess = await self.rpc("createSession", {"cortexToken": token, "headset": hid, "status": "active"})
+        sid = sess["id"]
+
+        print("Subscribing to EEG Stream...")
+        await self.rpc("subscribe", {"cortexToken": token, "session": sid, "streams": ["eeg"]})
+        print("Stream established!")
+
+    async def stream(self, callback):
+        while True:
+            try:
+                raw_msg = await self.ws.recv()
+                msg = json.loads(raw_msg)
+                if "eeg" in msg:
+                    await callback(msg["eeg"])
+            except websockets.exceptions.ConnectionClosed:
+                print("Connection closed by Cortex. Exiting.")
+                break
+
+

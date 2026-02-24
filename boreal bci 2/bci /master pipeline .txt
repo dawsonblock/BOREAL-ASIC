@@ -1,0 +1,69 @@
+import time
+import numpy as np
+from .config import CFG
+from .dsp.csp import CSP, bandpass
+from .dsp.baseline import AdaptiveBaseline
+from .dsp.artifacts import analyze_signal_quality, detect_jaw_clench
+from .control.kalman import KinematicKalman
+from .control.mapper import IntentMapper
+
+class Pipeline:
+    def __init__(self):
+        self.fs = CFG.FS
+        self.buf = np.zeros((CFG.WIN, 14))
+        self.i = 0
+        
+        # Core modules
+        self.csp = CSP.load_or_mock(CFG.CSP_FILE)
+        self.baseline = AdaptiveBaseline(dim=28, alpha=CFG.NORM_ALPHA, clip_z=CFG.NORM_CLIP_Z)
+        self.kalman = KinematicKalman()
+        self.mapper = IntentMapper(CFG.DEADZONE, CFG.GAIN, CFG.V_MAX)
+        
+        self.last_click_time = 0.0
+
+    def extract_features(self, win):
+        feats = []
+        for ch in range(14):
+            mu = bandpass(win[:, ch], 8, 14, self.fs)
+            beta = bandpass(win[:, ch], 15, 25, self.fs)
+            feats.append(np.log(np.mean(mu**2) + 1e-8))
+            feats.append(np.log(np.mean(beta**2) + 1e-8))
+        return np.array(feats)
+
+    def step(self, sample):
+        self.buf[self.i] = sample
+        self.i += 1
+        
+        if self.i < CFG.WIN:
+            return np.zeros(2), False, 0.0
+
+        win = self.buf.copy()
+        self.i = CFG.HOP
+        self.buf[:CFG.HOP] = self.buf[CFG.HOP:]
+
+        # 1. EMG & Quality Detection
+        is_clench, clench_var = detect_jaw_clench(win, CFG.CLENCH_CHANNELS, CFG.CLENCH_VAR_THRESH)
+        is_broken, quality = analyze_signal_quality(win)
+        
+        trigger_click = False
+        current_time = time.time()
+        if is_clench and (current_time - self.last_click_time) > CFG.CLENCH_DEBOUNCE_S:
+            trigger_click = True
+            self.last_click_time = current_time
+
+        freeze_cursor = is_broken or is_clench
+
+        # 2. Extract & Adaptively Normalize Features
+        raw_feats = self.extract_features(win)
+        z_feats = self.baseline.apply(raw_feats, freeze_update=freeze_cursor)
+
+        # 3. Spatial Projection
+        u = self.csp.project(z_feats)
+        
+        # 4. Map Intent to Kinematics
+        v_target = self.mapper.map_velocity(u, quality_scalar=quality)
+        v_smooth = self.kalman.step(v_target, CFG.HOP / self.fs, freeze=freeze_cursor)
+
+        return v_smooth, trigger_click, clench_var
+
+

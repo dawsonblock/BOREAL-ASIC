@@ -1,0 +1,32 @@
+import numpy as np
+
+# Boreal Neuro-Core v2.4 - LUT Generation Script
+# Packs Sigmoid(x) and Sigmoid'(x) into a single 32-bit word for FPGA BRAM
+# [31:16] = Derivative (Q1.15) | [15:0] = Activation (Q1.15)
+
+def generate_boreal_lut(filename="boreal_lut.mem", entries=1024, x_range=8.0):
+    scale = 2**15
+    with open(filename, "w") as f:
+        f.write("// Boreal Neuro-Core v2.4 ROM Initialization\n")
+        f.write(f"// Range: [-{x_range}, {x_range}] mapped to {entries} addresses\n")
+        
+        for i in range(entries):
+            # Map index to x value
+            x = (i / (entries / 2) - 1.0) * x_range
+            
+            # Compute Sigmoid and Derivative
+            sig = 1.0 / (1.0 + np.exp(-x))
+            deriv = sig * (1.0 - sig)
+            
+            # Convert to Q1.15 Fixed Point
+            sig_fixed = int(np.clip(round(sig * (scale - 1)), 0, scale - 1))
+            deriv_fixed = int(np.clip(round(deriv * (scale - 1)), 0, scale - 1))
+            
+            # Pack: [Deriv][Sig]
+            packed = (deriv_fixed << 16) | sig_fixed
+            f.write(f"{packed:08X}\n")
+
+if __name__ == "__main__":
+    generate_boreal_lut()
+    print("LUT generated: boreal_lut.mem")
+

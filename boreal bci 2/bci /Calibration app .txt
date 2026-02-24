@@ -1,0 +1,62 @@
+import asyncio
+import os
+import numpy as np
+from epoc_cursor.config import CFG
+from epoc_cursor.cortex_client import Cortex
+from epoc_cursor.pipeline import Pipeline
+
+async def main():
+    os.makedirs(CFG.DATA_DIR, exist_ok=True)
+    cortex = Cortex()
+    await cortex.connect()
+    await cortex.handshake()
+
+    pipe = Pipeline()
+    X_left, X_right = [], []
+    current_class = None
+    collecting = False
+
+    async def on_eeg(eeg):
+        nonlocal collecting
+        if not collecting: return
+        
+        sample = np.array(eeg[:14], dtype=np.float32)
+        pipe.buf[pipe.i] = sample
+        pipe.i += 1
+        
+        if pipe.i >= CFG.WIN:
+            win = pipe.buf.copy()
+            pipe.i = CFG.HOP
+            pipe.buf[:CFG.HOP] = pipe.buf[CFG.HOP:]
+            
+            # Record RAW features for training (normalization happens at runtime)
+            feats = pipe.extract_features(win)
+            if current_class == "LEFT":
+                X_left.append(feats)
+            elif current_class == "RIGHT":
+                X_right.append(feats)
+
+    stream_task = asyncio.create_task(cortex.stream(on_eeg))
+
+    print("\n=== CALIBRATION ===")
+    print("Imagine moving left, then right. Keep jaw relaxed.")
+    input("Press Enter to begin LEFT intent (30s)...")
+    current_class = "LEFT"; collecting = True
+    await asyncio.sleep(30)
+    collecting = False
+    print(f"Recorded {len(X_left)} windows.")
+
+    input("Press Enter to begin RIGHT intent (30s)...")
+    current_class = "RIGHT"; collecting = True
+    await asyncio.sleep(30)
+    collecting = False
+    print(f"Recorded {len(X_right)} windows.")
+
+    stream_task.cancel()
+    np.savez(CFG.CALIB_FILE, X_left=np.array(X_left), X_right=np.array(X_right))
+    print(f"Saved to {CFG.CALIB_FILE}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+

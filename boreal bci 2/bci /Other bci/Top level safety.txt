@@ -1,0 +1,79 @@
+// Top Level BCI Unified Stack with Hardware Safety Tiers
+module apex_top #(
+    parameter W = 16,
+    parameter CH = 8
+)(
+    input  wire clk, rst,
+    
+    // Hardware Inputs
+    input  wire drdy_n, miso,
+    output wire sclk, cs_n,
+
+    // Host / Control Inteface (MMIO Mock)
+    input  wire clear_latch,
+    
+    // Outputs to Host/HID
+    output wire signed [W-1:0] hid_ux, hid_uy, hid_conf,
+    output wire [2:0]          hid_token,
+    output reg  [1:0]          safety_tier
+);
+
+    // Internal wires
+    wire frame_valid, frame_miss_flag, variance_spike;
+    wire signed [23:0] raw_ch [0:7];
+    wire signed [W-1:0] feat [0:7];
+    
+    // Simulated weights/params (Normally mapped to MMIO)
+    wire signed [W-1:0] wL [0:7];
+    wire signed [W-1:0] wR [0:7];
+    assign wL[0] = 16'sd16384; assign wR[0] = -16'sd8192;
+    // ... assign remaining to 0 for brevity
+
+    // Truncate 24-bit ADC to 16-bit feature for pipeline
+    genvar g;
+    generate
+        for(g=0; g<8; g=g+1) begin : feat_map
+            assign feat[g] = raw_ch[g][23:8];
+        end
+    endgenerate
+
+    // Module: ADS1299 MAC
+    ads1299_mac mac_inst (
+        .clk(clk), .rst(rst),
+        .drdy_n(drdy_n), .miso(miso),
+        .sclk(sclk), .cs_n(cs_n),
+        .frame_valid(frame_valid),
+        .frame_miss_flag(frame_miss_flag),
+        .ch(raw_ch)
+    );
+
+    // Module: Math Core
+    wire safety_freeze = (safety_tier >= 2);
+    
+    apex_math_core math_inst (
+        .clk(clk), .rst(rst), .valid_in(frame_valid),
+        .safety_freeze(safety_freeze),
+        .feat(feat), .wL(wL), .wR(wR),
+        .alpha(16'sd1024), .beta(16'sd1024), .ksig(16'sd100),
+        .ux_out(hid_ux), .uy_out(hid_uy), .conf_out(hid_conf),
+        .token_out(hid_token), .variance_spike(variance_spike)
+    );
+
+    // FSM: Hardware Safety Model
+    always @(posedge clk) begin
+        if (rst) begin
+            safety_tier <= 0;
+        end else begin
+            // Escalation rules (Latching)
+            if (frame_miss_flag) begin
+                safety_tier <= 3; // Hard stop
+            end else if (variance_spike && safety_tier < 2) begin
+                safety_tier <= 2; // Freeze motion
+            end else if (clear_latch) begin
+                safety_tier <= 0; // Operator cleared
+            end
+            // Tier 1 (Gain limit) omitted for brevity but follows same pattern
+        end
+    end
+endmodule
+

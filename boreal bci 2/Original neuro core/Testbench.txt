@@ -1,0 +1,56 @@
+/*
+ * Boreal Neuro-Core v2.4 Testbench
+ * Simulates neural spike ingestion and Active Inference convergence
+ */
+
+`timescale 1ns / 1ps
+
+module boreal_tb();
+    reg clk;
+    reg rst_n;
+    reg bite_switch_n;
+    reg ads_drdy_n;
+    reg ads_miso;
+    
+    wire pwm_out;
+    wire stim_out;
+
+    // Instantiate Top Level
+    boreal_system_top uut (
+        .clk_100m(clk),
+        .rst_n(rst_n),
+        .bite_switch_n(bite_switch_n),
+        .ads_drdy_n(ads_drdy_n),
+        .ads_miso(ads_miso),
+        .pwm_motor_out(pwm_out),
+        .stim_trigger_out(stim_out)
+    );
+
+    // Clock Generation
+    initial clk = 0;
+    always #5 clk = ~clk;
+
+    // Simulation Scenario
+    initial begin
+        // Reset
+        rst_n = 0; bite_switch_n = 1; ads_drdy_n = 1; ads_miso = 0;
+        #100 rst_n = 1;
+        
+        // Simulate Neural Intent (Alpha Waves)
+        repeat(10) begin
+            #500 ads_drdy_n = 0; // Data Ready
+            #100 ads_drdy_n = 1;
+            // Shift in dummy 24-bit pattern
+            repeat(216) begin
+                #10 ads_miso = ~ads_miso;
+            end
+        end
+
+        // Simulate Emergency Halt
+        #1000 bite_switch_n = 0;
+        #500  bite_switch_n = 1;
+        
+        #2000 $finish;
+    end
+endmodule
+

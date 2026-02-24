@@ -1,0 +1,69 @@
+/*
+ * Boreal Neuro-Core v2.4 - Top Level Wrapper
+ * Integrates ADC Interface, DC-Blockers, Inference Engine, and PLL
+ */
+
+module boreal_system_top (
+    input  wire clk_100m,
+    input  wire rst_n,
+    input  wire bite_switch_n, // Hardware Override
+    
+    // ADS1299 SPI Physical
+    input  wire ads_drdy_n,
+    input  wire ads_miso,
+    output wire ads_sclk,
+    output wire ads_cs_n,
+    
+    // Physical Outputs
+    output wire pwm_motor_out,
+    output wire stim_trigger_out
+);
+
+    // Internal Interconnects
+    wire [127:0] raw_channels;
+    wire         adc_valid;
+    wire [7:0]   system_pwm;
+    wire         peak_detect;
+    wire         anti_detect;
+
+    // 1. SPI Ingestion Logic (From previous turn)
+    boreal_ads1299_spi ads_interface (
+        .clk_100m(clk_100m),
+        .rst_n(rst_n),
+        .bite_switch_n(bite_switch_n),
+        .drdy_n(ads_drdy_n),
+        .miso(ads_miso),
+        .sclk(ads_sclk),
+        .cs_n(ads_cs_n),
+        .eeg_channels_out(raw_channels),
+        .data_valid(adc_valid)
+    );
+
+    // 2. The Core Active Inference Engine
+    // Processes all 8 channels with DC-blocking and Saturation Arithmetic
+    boreal_apex_core inference_engine (
+        .clk(clk_100m),
+        .rst_n(rst_n),
+        .emergency_halt_n(bite_switch_n),
+        .raw_adc_in(raw_channels[23:0]), // Channel 0 feed
+        .adc_channel_sel(3'b000),
+        .adc_data_ready(adc_valid),
+        .pwm_out(system_pwm)
+    );
+
+    // 3. Adaptive Phase Tracking (For Closed-Loop Stimulation)
+    boreal_pll_tracker pll (
+        .clk(clk_100m),
+        .rst_n(rst_n),
+        .signal_in(inference_engine.filtered_sample),
+        .data_ready(adc_valid),
+        .trigger_peak(peak_detect),
+        .trigger_anti(anti_detect)
+    );
+
+    // 4. Output Mapping
+    assign pwm_motor_out = (system_pwm > 128); // Simple 1-bit PWM for demo
+    assign stim_trigger_out = peak_detect;      // Fire on Delta Peak (Sleep Mode)
+
+endmodule
+

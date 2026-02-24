@@ -1,0 +1,46 @@
+import numpy as np
+import json
+import os
+from scipy.signal import butter, lfilter
+
+def bandpass(x, lo, hi, fs):
+    b, a = butter(4, [lo / (fs / 2), hi / (fs / 2)], btype='band')
+    return lfilter(b, a, x)
+
+class CSP:
+    def __init__(self, W):
+        self.W = W.astype(np.float32)
+
+    def project(self, x):
+        return self.W.T @ x
+
+    def save(self, path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            json.dump({"W": self.W.tolist()}, f)
+
+    @staticmethod
+    def train(X_left, X_right):
+        # Regularized Covariance
+        C1 = np.cov(X_left.T) + np.eye(X_left.shape[1]) * 1e-5
+        C2 = np.cov(X_right.T) + np.eye(X_right.shape[1]) * 1e-5
+        C = C1 + C2
+
+        eigvals, eigvecs = np.linalg.eig(np.linalg.pinv(C).dot(C1))
+        idx = np.argsort(eigvals)[::-1]
+        W = np.real(eigvecs[:, idx[:2]]) 
+        return CSP(W)
+
+    @staticmethod
+    def load_or_mock(path):
+        try:
+            obj = json.load(open(path))
+            print("Loaded trained CSP weights.")
+            return CSP(np.array(obj["W"]))
+        except FileNotFoundError:
+            print("WARNING: csp.json not found. Using generic spatial filter.")
+            dummy_w = np.zeros((28, 2))
+            dummy_w[0:7, 0] = 0.5; dummy_w[7:14, 0] = -0.5
+            dummy_w[14:21, 1] = 0.5; dummy_w[21:28, 1] = -0.5
+            return CSP(dummy_w)
+

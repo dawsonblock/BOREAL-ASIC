@@ -1,0 +1,33 @@
+import numpy as np
+
+class AdaptiveBaseline:
+    """Tracks resting brainwave state to fix signal drift over time."""
+    def __init__(self, dim, alpha=0.005, clip_z=5.0):
+        self.dim = dim
+        self.alpha = alpha
+        self.clip_z = clip_z
+        self.mu = np.zeros(dim, dtype=np.float32)
+        self.var = np.ones(dim, dtype=np.float32)
+        self.initialized = False
+
+    def apply(self, x, freeze_update=False):
+        if not self.initialized:
+            self.mu = np.copy(x)
+            self.initialized = True
+            return np.zeros_like(x)
+
+        std = np.sqrt(self.var + 1e-6)
+        z = (x - self.mu) / std
+
+        # If it's a massive artifact or user is clenching, do NOT ruin the baseline
+        if freeze_update or np.any(np.abs(z) > self.clip_z):
+            return z
+
+        # EMA Update
+        delta = x - self.mu
+        self.mu += self.alpha * delta
+        self.var += self.alpha * (delta**2 - self.var)
+        self.var = np.maximum(self.var, 1e-6)
+
+        return (x - self.mu) / np.sqrt(self.var + 1e-6)
+

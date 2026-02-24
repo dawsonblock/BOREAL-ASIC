@@ -1,0 +1,20 @@
+# Makefile for Cocotb Simulation
+TOPLEVEL_LANG = verilog
+
+# RTL Source files
+PWD=$(shell pwd)
+VERILOG_SOURCES = $(PWD)/../rtl/ads1299_mac.v \
+                  $(PWD)/../rtl/apex_math_core.v \
+                  $(PWD)/../rtl/apex_top.v
+
+# Top module name
+TOPLEVEL = apex_top
+
+# Python test module
+MODULE = tb_apex_top
+
+# Use Icarus Verilog
+SIM ?= icarus
+
+include $(shell cocotb-config --makefiles)/Makefile.sim
+

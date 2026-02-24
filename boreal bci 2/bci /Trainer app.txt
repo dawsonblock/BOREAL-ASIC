@@ -1,0 +1,23 @@
+import numpy as np
+from epoc_cursor.config import CFG
+from epoc_cursor.dsp.csp import CSP
+
+def main():
+    try:
+        data = np.load(CFG.CALIB_FILE)
+    except FileNotFoundError:
+        print(f"Error: {CFG.CALIB_FILE} not found. Run record_calib.py first.")
+        return
+
+    X_left = data["X_left"]
+    X_right = data["X_right"]
+
+    print(f"Training CSP on Left ({len(X_left)}) vs Right ({len(X_right)})...")
+    csp = CSP.train(X_left, X_right)
+    csp.save(CFG.CSP_FILE)
+    print(f"Spatial weights successfully generated -> {CFG.CSP_FILE}")
+
+if __name__ == "__main__":
+    main()
+
+

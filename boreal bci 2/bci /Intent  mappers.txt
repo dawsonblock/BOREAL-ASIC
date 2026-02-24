@@ -1,0 +1,27 @@
+import numpy as np
+
+class IntentMapper:
+    """Converts abstract 2D projections into safe screen velocities."""
+    def __init__(self, deadzone, gain, vmax):
+        self.deadzone = deadzone
+        self.gain = gain
+        self.vmax = vmax
+
+    def map_velocity(self, u, quality_scalar=1.0):
+        mag = np.linalg.norm(u)
+        
+        if mag < self.deadzone:
+            return np.zeros(2)
+
+        # Apply gain and scale by signal quality
+        direction = u / (mag + 1e-6)
+        speed = self.gain * (mag - self.deadzone) * quality_scalar
+        v = direction * speed
+
+        # Safety clamp
+        v_mag = np.linalg.norm(v)
+        if v_mag > self.vmax:
+            v *= (self.vmax / v_mag)
+            
+        return v
+

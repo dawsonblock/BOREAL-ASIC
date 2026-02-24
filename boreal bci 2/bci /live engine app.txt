@@ -1,0 +1,49 @@
+import asyncio
+import time
+import os
+import numpy as np
+import pyautogui
+from epoc_cursor.config import CFG
+from epoc_cursor.cortex_client import Cortex
+from epoc_cursor.pipeline import Pipeline
+from epoc_cursor.utils import TelemetryLogger
+
+pyautogui.FAILSAFE = False
+
+async def main():
+    os.makedirs(CFG.DATA_DIR, exist_ok=True)
+    
+    cortex = Cortex()
+    await cortex.connect()
+    await cortex.handshake()
+
+    pipe = Pipeline()
+    logger = TelemetryLogger(CFG.LOG_FILE)
+
+    print("\n==================================================")
+    print(" BCI ONLINE: Move cursor via EEG, clench jaw to click.")
+    print("==================================================\n")
+
+    async def on_eeg(eeg):
+        sample = np.array(eeg[:14], dtype=np.float32)
+        v, click, clench_var = pipe.step(sample)
+
+        if np.any(v):
+            # Safe casting for OS level cursor interactions
+            pyautogui.moveRel(int(np.round(v[0])), int(np.round(v[1])), duration=0)
+
+        if click:
+            print(f"CLICK! (EMG Power: {clench_var:.1f})")
+            pyautogui.click()
+            
+        logger.log_frame(time.time(), v, click, clench_var)
+
+    await cortex.stream(on_eeg)
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nSession cleanly terminated.")
+
+

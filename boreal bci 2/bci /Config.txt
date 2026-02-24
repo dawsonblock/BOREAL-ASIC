@@ -1,0 +1,33 @@
+import os
+from dataclasses import dataclass
+
+@dataclass
+class CFG:
+    # Sampling & Windowing
+    FS = 256                
+    WIN = 32                # 125ms window
+    HOP = 16                # 62.5ms update rate
+    
+    # Cursor Control & Physics
+    DEADZONE = 0.35         # Intent deadzone (Z-score magnitude)
+    GAIN = 6.0              # Velocity multiplier
+    V_MAX = 45.0            # Max pixels per frame clamp
+    
+    # Jaw Clench Thresholds (EMG)
+    CLENCH_VAR_THRESH = 1800.0  
+    CLENCH_DEBOUNCE_S = 1.0     
+    
+    # Baseline Adaptation
+    NORM_ALPHA = 0.005      # Learning rate for baseline drift
+    NORM_CLIP_Z = 5.0       # Ignore artifacts in baseline update
+    
+    # EPOC X Channels: AF3, F7, F3, FC5, T7, P7, O1, O2, P8, T8, FC6, F4, F8, AF4
+    CLENCH_CHANNELS = (1, 4, 9, 12) # Temporal/Frontal: F7, T7, T8, F8
+
+    # Paths
+    DATA_DIR = "data"
+    CALIB_FILE = "data/calib.npz"
+    CSP_FILE = "data/csp.json"
+    LOG_FILE = "data/hybrid_session.csv"
+
+

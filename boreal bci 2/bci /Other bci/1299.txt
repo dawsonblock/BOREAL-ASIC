@@ -1,0 +1,62 @@
+// ADS1299 SPI Frame Reader with Missing-Frame Timeout
+module ads1299_mac #(
+    parameter BITS = 216,
+    parameter TIMEOUT_CYCLES = 50000 // 1ms at 50MHz
+)(
+    input  wire        clk, rst,
+    input  wire        drdy_n,
+    input  wire        miso,
+    output reg         sclk, cs_n,
+    output reg         frame_valid,
+    output reg         frame_miss_flag,
+    output reg  signed [23:0] ch [0:7]
+);
+    reg [8:0]  bitcnt;
+    reg [BITS-1:0] shift_reg;
+    reg [31:0] timeout_ctr;
+    reg        drdy_d;
+
+    always @(posedge clk) begin
+        drdy_d <= drdy_n;
+        
+        if (rst) begin 
+            cs_n <= 1; sclk <= 0; bitcnt <= 0; 
+            frame_valid <= 0; frame_miss_flag <= 0;
+            timeout_ctr <= 0;
+        end else begin
+            frame_valid <= 0;
+            
+            // Timeout monitor
+            if (timeout_ctr > TIMEOUT_CYCLES) begin
+                frame_miss_flag <= 1; // Safety trigger
+            end else begin
+                timeout_ctr <= timeout_ctr + 1;
+            end
+
+            if (drdy_d == 1 && drdy_n == 0) begin 
+                // DRDY falling edge - start frame
+                cs_n <= 0; bitcnt <= 0; timeout_ctr <= 0; frame_miss_flag <= 0;
+            end else if (!cs_n) begin
+                sclk <= ~sclk;
+                if (sclk) begin // Sample MISO on falling edge (depending on SPI mode)
+                    shift_reg <= {shift_reg[BITS-2:0], miso};
+                    bitcnt <= bitcnt + 1;
+                    if (bitcnt == BITS-1) begin
+                        cs_n <= 1; 
+                        frame_valid <= 1;
+                        // Unpack channels, skipping 24-bit status word
+                        ch[0] <= shift_reg[191 -:24];
+                        ch[1] <= shift_reg[167 -:24];
+                        ch[2] <= shift_reg[143 -:24];
+                        ch[3] <= shift_reg[119 -:24];
+                        ch[4] <= shift_reg[95  -:24];
+                        ch[5] <= shift_reg[71  -:24];
+                        ch[6] <= shift_reg[47  -:24];
+                        ch[7] <= shift_reg[23  -:24];
+                    end
+                end
+            end
+        end
+    end
+endmodule
+

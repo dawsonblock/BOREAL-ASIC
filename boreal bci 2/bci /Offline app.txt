@@ -1,0 +1,33 @@
+import csv
+import time
+from epoc_cursor.config import CFG
+
+def main():
+    """Reads a previously logged session and prints metrics to allow config tuning."""
+    try:
+        with open(CFG.LOG_FILE, "r") as f:
+            reader = csv.DictReader(f)
+            clicks = 0
+            frames = 0
+            
+            print(f"Replaying {CFG.LOG_FILE}...\n")
+            for row in reader:
+                frames += 1
+                v_mag = (float(row['vx'])**2 + float(row['vy'])**2)**0.5
+                
+                if int(row['click']) == 1:
+                    clicks += 1
+                    print(f"Frame {frames}: CLICK DETECTED (Clench Var: {row['clench_var']})")
+                
+                # Print high velocity moments to check if deadzone/gain needs tuning
+                if v_mag > CFG.V_MAX * 0.8:
+                    print(f"Frame {frames}: High Velocity Vector -> ({row['vx']}, {row['vy']})")
+                    
+            print(f"\nReplay Complete. Total Frames: {frames}, Total Clicks: {clicks}")
+            
+    except FileNotFoundError:
+        print(f"No log file found at {CFG.LOG_FILE}. Run live session first.")
+
+if __name__ == "__main__":
+    main()
+

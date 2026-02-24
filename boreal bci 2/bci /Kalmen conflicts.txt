@@ -1,0 +1,29 @@
+import numpy as np
+
+class KinematicKalman:
+    """Provides mass and friction to the cursor, preventing jitter."""
+    def __init__(self):
+        self.x = np.zeros(4) # [x, y, vx, vy]
+        self.P = np.eye(4)
+        
+        # Friction parameter (0.0 = stops instantly, 1.0 = ice)
+        self.decay = 0.85 
+
+    def step(self, u, dt, freeze=False):
+        if freeze:
+            self.x[2:4] = 0.0 # Kill velocity instantly
+            u = np.zeros(2)
+
+        # F Matrix with velocity decay (friction)
+        F = np.array([[1, 0, dt, 0], 
+                      [0, 1, 0, dt], 
+                      [0, 0, self.decay, 0], 
+                      [0, 0, 0, self.decay]])
+        
+        B = np.array([[0, 0], [0, 0], [1, 0], [0, 1]])
+
+        self.x = F @ self.x + B @ u
+        self.P = F @ self.P @ F.T + np.eye(4) * 0.05
+
+        return self.x[2:4]
+

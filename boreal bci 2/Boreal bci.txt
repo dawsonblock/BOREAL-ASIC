@@ -1,0 +1,63 @@
+/**
+ * Boreal BCI Bridge: EMOTIV Cortex to FPGA
+ * Requires: 'ws' and 'serialport' npm packages
+ */
+const WebSocket = require('ws');
+const { SerialPort } = require('serialport');
+
+// CONFIGURATION
+const EMOTIV_URL = 'wss://localhost:6868';
+const FPGA_PORT = '/dev/tty.usbserial-1410'; // Update to your FPGA's COM/Serial port
+const BAUDRATE = 115200;
+
+// Initialize Serial Port to FPGA
+const port = new SerialPort({ path: FPGA_PORT, baudRate: BAUDRATE });
+
+// Initialize WebSocket to EMOTIV Cortex
+const socket = new WebSocket(EMOTIV_URL, { rejectUnauthorized: false });
+
+let authToken = "";
+
+socket.on('open', () => {
+    console.log("Connected to EMOTIV Cortex API");
+    // 1. Authenticate (Requires your Emotiv Client ID/Secret)
+    socket.send(JSON.stringify({
+        "id": 1, "jsonrpc": "2.0", "method": "authorize",
+        "params": { "clientId": "YOUR_CLIENT_ID", "clientSecret": "YOUR_CLIENT_SECRET" }
+    }));
+});
+
+socket.on('message', (data) => {
+    const response = JSON.parse(data);
+    
+    // 2. Handle Auth Response and Subscribe to EEG
+    if (response.id === 1) {
+        authToken = response.result.cortexToken;
+        socket.send(JSON.stringify({
+            "id": 2, "jsonrpc": "2.0", "method": "subscribe",
+            "params": { "cortexToken": authToken, "streams": ["eeg"], "session": "active" }
+        }));
+    }
+
+    // 3. RELAY EEG DATA TO FPGA
+    if (response.sid && response.eeg) {
+        // response.eeg contains [counter, 14 channels, ...]
+        const eegData = response.eeg.slice(1, 15); // Extract 14 EEG channels
+        
+        // Pack into 16-bit signed integers for Boreal Core
+        const buffer = Buffer.alloc(30); 
+        buffer[0] = 0xAA; // Header Sync Byte
+        
+        eegData.forEach((val, i) => {
+            // Normalize and clamp value for FPGA Q1.15
+            const clampedVal = Math.max(-32768, Math.min(32767, val * 10));
+            buffer.writeInt16BE(clampedVal, 1 + (i * 2));
+        });
+        
+        buffer[29] = 0x55; // Footer Sync Byte
+        port.write(buffer); // Send to FPGA
+    }
+});
+
+console.log("Boreal Bridge Active. Waiting for neural spikes...");
+

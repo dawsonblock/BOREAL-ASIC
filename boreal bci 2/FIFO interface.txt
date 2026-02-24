@@ -1,0 +1,40 @@
+/*
+ * Boreal High-Speed I/O Bridge
+ * Replaces slow UART with an 8-bit Parallel FIFO (FT232H style)
+ * Bandwidth: ~40MB/s (Zero-Lag Data Transfer)
+ */
+
+module boreal_fifo_io (
+    input  wire        clk,
+    input  wire [7:0]  data_bus, // 8-bit parallel input from FT232H
+    input  wire        rxf_n,    // Read Enable from FTDI
+    output reg         rd_n,     // Read Command to FTDI
+    
+    output reg [15:0]  ch_data_out,
+    output reg         valid_pulse
+);
+
+    reg [1:0] state;
+    always @(posedge clk) begin
+        rd_n <= 1'b1;
+        valid_pulse <= 1'b0;
+        
+        case (state)
+            0: if (!rxf_n) begin 
+                rd_n <= 1'b0; // Request Byte 1
+                state <= 1; 
+            end
+            1: begin 
+                ch_data_out[15:8] <= data_bus; 
+                rd_n <= 1'b0; // Request Byte 2
+                state <= 2; 
+            end
+            2: begin 
+                ch_data_out[7:0] <= data_bus; 
+                valid_pulse <= 1'b1; 
+                state <= 0; 
+            end
+        endcase
+    end
+endmodule
+

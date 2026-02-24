@@ -1,0 +1,17 @@
+import csv
+import numpy as np
+
+class TelemetryLogger:
+    """Deterministic logging for offline replay & tuning."""
+    def __init__(self, path):
+        self.f = open(path, "w", newline="")
+        self.w = csv.writer(self.f)
+        self.w.writerow(["timestamp", "vx", "vy", "click", "clench_var"])
+
+    def log_frame(self, t, v, click, var):
+        self.w.writerow([f"{t:.4f}", f"{v[0]:.3f}", f"{v[1]:.3f}", int(click), f"{var:.1f}"])
+        
+    def close(self):
+        self.f.close()
+
+

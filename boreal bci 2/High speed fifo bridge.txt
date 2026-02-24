@@ -1,0 +1,35 @@
+/**
+ * Boreal High-Speed Node Relay
+ * Direct buffer streaming to FT232H Synchronous FIFO
+ */
+const FTDIDriver = require('ftdi-js'); // Hypothetical high-speed driver
+const WebSocket = require('ws');
+
+const socket = new WebSocket('wss://localhost:6868', { rejectUnauthorized: false });
+let ftdi;
+
+// Initialize High-Speed Device
+try {
+    ftdi = new FTDIDriver.Device(0);
+    ftdi.setBitMode(0xFF, 0x40); // Single Channel Synchronous 245 FIFO Mode
+    ftdi.setBaudRate(40000000);   // 40MB/s throughput
+    console.log("High-Speed Boreal Pipe Established");
+} catch(e) {
+    console.log("FT232H Not Found. Running in Simulation Mode.");
+}
+
+socket.on('message', (data) => {
+    const response = JSON.parse(data);
+    if (response.eeg) {
+        const eeg = response.eeg.slice(1, 15);
+        const buffer = Buffer.alloc(28);
+        
+        eeg.forEach((val, i) => {
+            buffer.writeInt16BE(Math.max(-32768, Math.min(32767, val * 10)), i * 2);
+        });
+
+        // Write to FPGA via High-Speed Parallel Bus
+        if (ftdi) ftdi.writeSync(buffer);
+    }
+});
+
